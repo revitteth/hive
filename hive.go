@@ -13,7 +13,6 @@ import (
 
 	"github.com/ethereum/hive/internal/libdocker"
 	"github.com/ethereum/hive/internal/libhive"
-	"gopkg.in/inconshreveable/log15.v2"
 )
 
 func main() {
@@ -32,6 +31,7 @@ func main() {
 		simLogLevel           = flag.Int("sim.loglevel", 3, "Selects log `level` of client instances. Supports values 0-5.")
 		simDevMode            = flag.Bool("dev", false, "Only starts the simulator API endpoint (listening at 127.0.0.1:3000 by default) without starting any simulators.")
 		simDevModeAPIEndpoint = flag.String("dev.addr", "127.0.0.1:3000", "Endpoint that the simulator API listens on")
+		errorOnFailingTests   = flag.Bool("exit.fail", true, "Exit with error code 1 if any test fails")
 
 		clients = flag.String("client", "go-ethereum", "Comma separated `list` of clients to use. Client names in the list may be given as\n"+
 			"just the client name, or a client_branch specifier. If a branch name is supplied,\n"+
@@ -130,12 +130,14 @@ func main() {
 		log15.Info(fmt.Sprintf("simulation %s finished", sim), "suites", result.Suites, "tests", result.Tests, "failed", result.TestsFailed)
 	}
 
-	switch failCount {
-	case 0:
-	case 1:
-		fatal(errors.New("1 test failed"))
-	default:
-		fatal(fmt.Errorf("%d tests failed", failCount))
+	if *errorOnFailingTests && failCount > 0 {
+		switch failCount {
+		case 0:
+		case 1:
+			fatal(errors.New("1 test failed"))
+		default:
+			fatal(fmt.Errorf("%d tests failed", failCount))
+		}
 	}
 }
 
